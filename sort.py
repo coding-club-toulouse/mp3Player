@@ -3,11 +3,10 @@
 
 import os
 import pygame
-from pygame import mixer
-from pygame import time
 import mutagen.mp3
 import mutagen.oggvorbis
 from mutagen.easyid3 import EasyID3
+from datetime import timedelta
  
 def get_info(f, item):
     """ En parallele a get_tag() """
@@ -19,7 +18,6 @@ def get_info(f, item):
 def get_tag(path):
     """ Obtention des tags mp3 ou ogg """
     ext = path[-3:]
-    flag = 'on'
  
     # Tag du MP3
     if ext == 'mp3':
@@ -27,11 +25,13 @@ def get_tag(path):
         try:
             f = EasyID3(path)
         except:
-            flag = 'off'   
+            f = zik
     # Tag du OGG
-    if ext == 'ogg':
+    elif ext == 'ogg':
         zik = mutagen.oggvorbis.OggVorbis(path)
         f = zik
+    else:
+        raise Exception(f"Invalid file passed: {path}")
  
     # Info sur le fichier musical
     length = str(int(zik.info.length))
@@ -39,58 +39,42 @@ def get_tag(path):
     sample_rate = str(zik.info.sample_rate / 1000.)
  
     # Obtention des tags
-    if flag != 'off':
-        album = get_info(f, 'album')
-        title = get_info(f, 'title')
-        artist = get_info(f, 'artist')
-        genre = get_info(f, 'genre')
-        composer = get_info(f, 'composer')
-        date = get_info(f, 'date')
-        tracknumber = get_info(f, 'tracknumber')
-    else:
-        album = 'unknown'
-        title = 'unknown'
-        artist = 'unknown'
-        genre = 'unknown'
-        composer = 'unknown'
-        date = 'unknown'
-        tracknumber = 'unknown'
- 
     rep={}
-    rep['artist']=artist
-    rep['album']=album
-    rep['title']=title
-    rep['bitrate']=bitrate
-    rep['sample_rate']=sample_rate
-    rep['duree']=length
-    rep['genre']=genre
-    rep['composer']=composer
-    rep['date']=date
-    rep['tracknumber']=tracknumber
+    rep['artist'] = get_info(f, 'artist')  or "unknown"
+    rep['album'] = get_info(f, 'album') or "unknown"
+    rep['title'] = get_info(f, 'title') or "unknown"
+    rep['bitrate'] = bitrate
+    rep['sample_rate'] = sample_rate
+    rep['duree'] = length
+    rep['genre'] = get_info(f, 'genre') or "unknown"
+    rep['composer'] = get_info(f, 'composer') or "unknown"
+    rep['date'] = get_info(f, 'date') or "unknown"
+    rep['tracknumber'] = get_info(f, 'tracknumber') or "unknown"
  
     return rep
 
 def find_music(direct, option):
     for element in os.listdir(direct):
-        if element.endswith('.mp3'):
+        if element.endswith(('.mp3', '.ogg')):
             path = direct+element
             target = get_tag(path)
-            if option == 'long':
-                if int(target['duree']) >= 240:
-                    print(target)
-                    pygame.mixer.init()
-                    clock = pygame.time.Clock()
-                    pygame.mixer.music.load(path)
-                    pygame.mixer.music.play()
-                    while pygame.mixer.music.get_busy():
-                        print("Playing....")
-                        clock.tick(1000)
-            elif option == 'short':
-                if int(target['duree']) < 240:
-                    print(target)
-                    pygame.mixer.init()
-                    clock = pygame.time.Clock()
-                    pygame.mixer.music.load(path)
-                    pygame.mixer.music.play()
-                    while pygame.mixer.music.get_busy():
-                        continue
+            if option == 'long' and int(target['duree']) >= 240:
+                print(target)
+                pygame.mixer.init()
+                pygame.mixer.music.load(path)
+                pygame.mixer.music.play()
+            elif option == 'short' and int(target['duree']) < 240:
+                print(target)
+                pygame.mixer.init()
+                pygame.mixer.music.load(path)
+                pygame.mixer.music.play()
+
+def is_playing():
+    return pygame.mixer.music.get_busy()
+
+def get_music_position():
+    if is_playing():
+        position = timedelta(milliseconds=pygame.mixer.music.get_pos())
+        return position.total_seconds()
+    else:
+        return 0

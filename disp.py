@@ -18,13 +18,12 @@ def main():
     button_s = pygame.Rect(230, 300, 200, 75)
     while display_window:
         key = pygame.key.get_pressed()
+        if key[K_ESCAPE]:
+            display_window = 0
         for event in pygame.event.get():
             if event.type == QUIT:
                 display_window = 0
-        if key[K_ESCAPE]:
-            display_window = 0
-        window.blit(background, (0, 0))
-        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = event.pos
                 if button_l.collidepoint(mouse_pos):
                     print('button long was pressed at {0}'.format(mouse_pos))
@@ -32,6 +31,7 @@ def main():
                 elif button_s.collidepoint(mouse_pos):
                     print('button short was pressed at {0}'.format(mouse_pos))
                     find_music('./music/', 'short')
+        window.blit(background, (0, 0))
         pygame.draw.rect(screen, [255, 0, 0], button_l)
         pygame.draw.rect(screen, [0, 255, 0], button_s)
         pygame.display.update()
